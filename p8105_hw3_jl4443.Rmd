@@ -3,8 +3,93 @@ title: "Homework 3"
 author: "Jessica Lavery"
 date: "10/10/2019"
 output: github_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(kableExtra)
+library(tidyverse)
+library(p8105.datasets)
 ```
+
+# Problem 1
+```{r}
+# load the dataset of interest
+data("instacart")
+
+# look at overview of dataset
+str(instacart)
+
+# calculate the number if items per order
+n_per_order <- instacart %>% 
+  group_by(user_id, order_id) %>% 
+  summarize(n_items = n())
+
+```
+
+The instacart dataset is in the structure of 1 record per item per order. It includes key information such as a user ID for the purchaser, the number of days since their prior order, a product identifier and indication of whether that item has been purchased before, the name of the product as well as the aisle and department that it can be found, as well as the time of the instacart purchase. 
+
+The dataset includes `r nrow(instacart)` records pertaining to information on `r n_distinct(pull(instacart, user_id))` users and `r n_distinct(pull(instacart, order_id))` oders. The average number of orders per user is `` (standard deviation: ).
+
+The average number of items per order is `r round(mean(pull(n_per_order, n_items)))` (standard deviation: `r round(sd(pull(n_per_order, n_items)), 1)`). 
+
+1. How many aisles are there, and which aisles are the most items ordered from?
+
+There is data for  `r n_distinct(pull(instacart, aisle_id))` in the instacart dataset. 
+
+As shown below, the most items are ordered from xx and the fewest items are ordered from . 
+```{r}
+items_per_aisle <- instacart %>% 
+  group_by(aisle) %>% 
+  summarize(n_items = n()) %>% 
+  arrange(desc(n_items))
+```
+
+The most items were ordered from the following aisles:
+
+```{r}
+items_per_aisle %>% 
+  head() %>% 
+  kable()
+```
+
+The fewest items were ordered from the following aisles:
+
+```{r}
+items_per_aisle %>% 
+  tail() %>% 
+  kable()
+```
+
+2. Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+
+```{r}
+items_per_aisle %>% 
+  filter(n_items >= 10000) %>% 
+  ggplot(aes(x = aisle, y = n_items)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(x = "Aisle",
+       y = "Number of items")
+```
+
+3. Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+
+```{r}
+
+```
+
+4. Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+```{r}
+instacart %>% 
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
+  group_by(product_name, order_dow) %>% 
+  summarize(mean_order_hour = mean(order_hour_of_day)) %>%
+  pivot_wider(names_from = order_dow,
+              values_from = mean_order_hour)
+```
+
