@@ -23,73 +23,91 @@ data("instacart")
 # look at overview of dataset
 str(instacart)
 
-# calculate the number if items per order
+# calculate the number of items per order
 n_per_order <- instacart %>% 
   group_by(user_id, order_id) %>% 
   summarize(n_items = n())
 
 ```
 
-The instacart dataset is in the structure of 1 record per item per order. It includes key information such as a user ID for the purchaser, the number of days since their prior order, a product identifier and indication of whether that item has been purchased before, the name of the product as well as the aisle and department that it can be found, as well as the time of the instacart purchase. 
+The instacart dataset is in the structure of 1 record per item per order and contains `r nrow(instacart)` records pertaining to information on `r n_distinct(pull(instacart, user_id))` users and `r n_distinct(pull(instacart, order_id))` oders. 
 
-The dataset includes `r nrow(instacart)` records pertaining to information on `r n_distinct(pull(instacart, user_id))` users and `r n_distinct(pull(instacart, order_id))` oders. The average number of orders per user is `` (standard deviation: ).
+There are `r ncol(instacart)` variables containing key information such as a customer ID, the number of days since their prior order (truncated at 30 days), a product identifier and indication of whether that item has been purchased before, the name of the product as well as the aisle and department that it can be found, as well as the time of the instacart purchase. 
+An example of a few products from a single customer's order can be seen below:
 
-The average number of items per order is `r round(mean(pull(n_per_order, n_items)))` (standard deviation: `r round(sd(pull(n_per_order, n_items)), 1)`). 
+```{r}
+head(instacart) %>% kable()
+```
 
+## Aisles
 1. How many aisles are there, and which aisles are the most items ordered from?
 
-There is data for  `r n_distinct(pull(instacart, aisle_id))` in the instacart dataset. 
+There is data on products from `r n_distinct(pull(instacart, aisle_id))` aisles in the instacart dataset. 
 
-As shown below, the most items are ordered from xx and the fewest items are ordered from . 
+As shown below, the most items are ordered from the fresh vegetables aisle, followed by the fresh fruits aisle. 
+
 ```{r}
+# count number of items purchased from each aisle
 items_per_aisle <- instacart %>% 
   group_by(aisle) %>% 
-  summarize(n_items = n()) %>% 
+  summarize(n_items = n()) 
+
+items_per_aisle %>% 
   arrange(desc(n_items))
 ```
 
-The most items were ordered from the following aisles:
+The fewest items are ordered from the beauty aisle, followed by the frozen juice and baby accessories aisles. 
 
 ```{r}
 items_per_aisle %>% 
-  head() %>% 
-  kable()
+  arrange(n_items)
 ```
 
-The fewest items were ordered from the following aisles:
-
-```{r}
-items_per_aisle %>% 
-  tail() %>% 
-  kable()
-```
-
-2. Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+2. Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10,000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
 
 ```{r}
 items_per_aisle %>% 
   filter(n_items >= 10000) %>% 
+  mutate(aisle = fct_reorder(factor(str_to_sentence(aisle)), n_items)) %>% 
   ggplot(aes(x = aisle, y = n_items)) +
   geom_bar(stat = "identity") +
   theme_minimal() +
-  labs(x = "Aisle",
-       y = "Number of items")
+  labs(title = "Number of items ordered in each aisle",
+       x = "Aisle",
+       y = "Number of items", 
+       caption = "Note: Aisles with fewer than 10,000 items purchased were excluded from this figure.") +
+  coord_flip()
 ```
 
 3. Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
 
+Table. Top 3 most popular items in select aisles.
+
 ```{r}
 
+# count number of times each item within each aisle was purchased, then get top 3 items per aisle
+instacart %>% 
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
+  group_by(aisle, product_name) %>%
+  summarize(n_times_ordered = n()) %>%
+  group_by(aisle) %>%
+  top_n(3, n_times_ordered) %>% 
+  kable()
 ```
 
 4. Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 
+Table. Average hour purchased by day of week that Pink Lady Apples and Coffee Ice Cream were purchased.
+
 ```{r}
+
+# calculate mean order hour by product (apples/ice cream) and day of week
 instacart %>% 
   filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
   group_by(product_name, order_dow) %>% 
-  summarize(mean_order_hour = mean(order_hour_of_day)) %>%
+  summarize(mean_order_hour = round(mean(order_hour_of_day), 2)) %>%
   pivot_wider(names_from = order_dow,
-              values_from = mean_order_hour)
+              values_from = mean_order_hour) %>% 
+  kable()
 ```
 
