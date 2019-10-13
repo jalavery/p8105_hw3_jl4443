@@ -1,7 +1,7 @@
 ---
 title: "Homework 3"
 author: "Jessica Lavery"
-date: "10/10/2019"
+date: "Due: 10/14/2019"
 output: github_document
 editor_options: 
   chunk_output_type: console
@@ -13,6 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(kableExtra)
 library(tidyverse)
 library(p8105.datasets)
+
+theme_set(theme_bw() + theme(legend.position = "bottom"))
+
 ```
 
 # Problem 1
@@ -90,6 +93,7 @@ instacart %>%
   group_by(aisle, product_name) %>%
   summarize(n_times_ordered = n()) %>%
   group_by(aisle) %>%
+  arrange(aisle, desc(n_times_ordered)) %>% 
   top_n(3, n_times_ordered) %>% 
   kable()
 ```
@@ -164,7 +168,7 @@ ggplot(data = excellent_brfss, aes(x = year, y = avg_data_value, group = state))
   geom_line() +
   labs(x = "Year",
        y = "Average data value",
-       title = "Spaghetti plot of average data values among excellent responses across locations within states")
+       title = "Spaghetti plot of average data values among excellent responses by state")
 
 ```
 
@@ -177,7 +181,7 @@ brfss %>%
   geom_boxplot() + 
   labs(x = "Response",
        y = "Distribution of data value",
-       title = "Distribution of data value by response and year among locations in New York State") + 
+       title = "Distribution of data value by response and year in New York State") + 
   facet_wrap(~ year)
 ```
 
@@ -211,28 +215,41 @@ accel_by_day <- accel  %>%
   summarize(total_activity = sum(activity_count)) 
 ```
 
-Looking at the total amount of activity per day, no obvious trends are apperent.  The total amount of activity on a given day ranges from `r min(pull(accel_by_day, total_activity))` to `r max(pull(accel_by_day, total_activity))`, and on average is `r `r mean(pull(accel_by_day, total_activity))` (standard deviation `r `r sd(pull(accel_by_day, total_activity))`).
+Looking at the total amount of activity per day either as a table or as a figure, no obvious trends are apperent.  The total amount of activity on a given day ranges from `r min(pull(accel_by_day, total_activity))` to `r format(max(pull(accel_by_day, total_activity)), scientific = FALSE)`, and on average is `r format(mean(pull(accel_by_day, total_activity)), scientific = FALSE)` (standard deviation `r format(sd(pull(accel_by_day, total_activity)), scientific = FALSE)`).
 
 ```{r}
 accel_by_day %>% 
   kable()
 ```
 
+```{r}
+ggplot(data = accel_by_day, aes(x = day_id, y = total_activity)) +
+  geom_line() +
+  labs(x = "Day of observation",
+       y = "Total activity",
+       title = "Total activity by day of observation") +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(breaks = seq(0, 35, 5))
+```
+
+
 2. Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
 
-
-##left off here -- finish graph and then describe patterns/conclusions
+Across all days of the week there is little activity from midnight to 4am, then activity increases until around noon and plateaus until about 7pm, where there is generally an increase in activity at 8pm, and then a steady decline until midnight. On Sundays, there is increased activity just before noon, and on Fridays there is increased activity between 8-9pm compared to other days of the week.  
 
 ```{r}
-accel %>% 
+accel_hourly <- accel %>% 
   mutate(hour = minute %/% 60) %>% 
   group_by(day, hour) %>% 
-  summarize(total_activity = sum(activity_count)) %>% 
-  ggplot(aes(x = hour, y = total_activity, color = day)) +
+  summarize(total_activity = mean(activity_count))
+
+ggplot(data = accel_hourly, aes(x = hour, y = total_activity, color = day)) +
   geom_line() +
-  labs(x = "Hour",
+  labs(x = "Time of day",
        y = "Total activity",
-       title = "Total activity recorded by day of observation") +
-  scale_y_continuous(limits = c(0, 2500))
+       color = "Day of week",
+       title = "Average activity recorded by day of observation") +
+  scale_y_continuous(breaks = seq(0, 1100, 200), limits = c(0, 1000)) +
+  scale_x_continuous(breaks = seq(0, 24, 4), labels = c("12am", "4am", "8am", "12pm", "4pm", "8pm", "12am")) 
 ```
 
